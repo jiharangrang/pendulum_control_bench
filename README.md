@@ -1,42 +1,42 @@
 # Control Bench
 
-MuJoCo 도립진자 환경에서 `LQR`과 `constrained MPC`를 직접 구현하고, 같은 외란과 같은 제약 조건 아래에서 두 제어기가 어떻게 다르게 실패하는지 비교한 포트폴리오 레포지토리다.
+MuJoCo 도립진자 환경에서 `LQR`과 `constrained MPC`를 직접 구현하고, 같은 외란과 같은 제약 조건 아래에서 두 제어기가 어떻게 다르게 실패하는지 비교한 포트폴리오 레포지토리입니다.
 
 ## 문제 설정
 
-관심사는 단순한 제어 성능 비교가 아니라 다음 질문이다.
+관심사는 단순한 제어 성능 비교가 아니라 다음과 같습니다.
 
-- 제약이 없을 때 MPC는 정말 LQR과 같은 입력을 내는가
-- `x`, `u`, `delta u` 제약이 활성화될 때 둘의 차이는 어디서 발생하는가
-- 지연과 센서 노이즈가 추가되면 어떤 실패 모드가 먼저 드러나는가
+- 제약이 없을 때 MPC가 정말 LQR과 같은 입력을 내는지
+- `x`, `u`, `delta u` 제약이 활성화될 때 둘의 차이가 어디서 발생하는지
+- 지연과 센서 노이즈가 추가되면 어떤 실패 모드가 먼저 드러나는지
 
-이 레포는 그 질문을 재현 가능한 실험 코드, 플롯, 보고서로 정리한다.
+이 레포는 그 질문을 재현 가능한 실험 코드, 플롯, 보고서로 정리합니다.
 
 ## 핵심 결과
 
-- 무제약 조건에서는 `terminal cost = DARE P`인 선형 MPC가 LQR과 수치 오차 수준으로 일치했다.
-- 전이 구간에서는 차이가 분명해졌다. 특히 `|x| <= 1`, `|u| <= 3`, `|delta u| <= 2.6` 조건에서 LQR은 rail limit에 먼저 걸리는 반면 MPC는 미래 상태 제약을 예측에 넣어 더 강한 외란까지 버틴다.
-- `delta u`는 임의로 잡지 않았다. high-amp 구간에서 sweep을 돌려, 두 제어기의 차이가 가장 정보량 있게 드러나는 대표값으로 `du_max = 2.6`을 선택했다.
+- 무제약 조건에서는 `terminal cost = DARE P`인 선형 MPC가 LQR과 수치 오차 수준으로 일치했습니다.
+- 전이 구간에서는 차이가 분명해졌습니다. 특히 `|x| <= 1`, `|u| <= 3`, `|delta u| <= 2.6` 조건에서 LQR은 rail limit에 먼저 걸리는 반면 MPC는 미래 상태 제약을 예측에 넣어 더 강한 외란까지 버팁니다.
+- `delta u`는 임의로 잡지 않았습니다. high-amp 구간에서 sweep을 돌려, 두 제어기의 차이가 가장 정보량 있게 드러나는 대표값으로 `du_max = 2.6`을 선택했습니다.
 
 ## 대표 결과
 
-센서 노이즈 `0.01`을 넣었을 때의 제약 활성 빈도와 마진:
+센서 노이즈 `0.01`을 넣었을 때의 제약 활성 빈도와 마진입니다:
 
 ![constraint activity with noise 0.01](assets/figures/sat_rate_transition.png)
 
-센서 노이즈 `0.01` 환경에서의 상태/입력 시계열 예시:
+센서 노이즈 `0.01` 환경에서의 상태/입력 시계열 예시입니다:
 
 ![timeseries with noise 0.01](assets/figures/u_timeseries_transition_seed1.png)
 
-입력 지연 `2-step`을 넣었을 때의 성공률과 실패 원인 분리:
+입력 지연 `2-step`을 넣었을 때의 성공률과 실패 원인 분리입니다:
 
 ![success rate with delay 2-step](assets/figures/success_rate_transition.png)
 
-이상적 조건에서 `du_max` 선택 근거. 값이 너무 작으면 둘 다 실패하고, 너무 크면 둘 다 성공해서 차이가 흐려진다:
+이상적 조건에서 `du_max` 선택 근거입니다. 값이 너무 작으면 둘 다 실패하고, 너무 크면 둘 다 성공해서 차이가 흐려집니다:
 
 ![success gap vs du](assets/figures/success_gap_vs_du.png)
 
-이상적 조건에서 amp별로 봐도 같은 경향이 유지된다:
+이상적 조건에서 amp별로 봐도 같은 경향이 유지됩니다:
 
 ![per amp success vs du](assets/figures/per_amp_success_vs_du.png)
 
@@ -50,7 +50,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-헤드리스 환경에서 비디오 렌더링이 필요하면 `MUJOCO_GL=egl`를 사용한다. `smoke_mujoco.py`는 이 값을 기본으로 설정한다.
+헤드리스 환경에서 비디오 렌더링이 필요하면 `MUJOCO_GL=egl`를 사용합니다. `smoke_mujoco.py`는 이 값을 기본으로 설정합니다.
 
 MuJoCo 스모크 테스트:
 
@@ -95,7 +95,7 @@ python -m experiments.fd_compare.plot_fd_compare \
   --u-seed 0
 ```
 
-더 긴 재현 절차와 figure-grade 실행 명령은 [docs/reproduction.md](docs/reproduction.md)에 정리했다.
+더 긴 재현 절차와 figure-grade 실행 명령은 [docs/reproduction.md](docs/reproduction.md)에 정리했습니다.
 
 ## 레포 구조
 
@@ -124,6 +124,6 @@ assets/figures/      README에 직접 쓰는 대표 이미지
 
 ## 한계와 다음 단계
 
-- 현재 메인 실험은 선형화 기반 MPC다. 비선형 MPC나 estimator는 아직 포함하지 않았다.
-- 실험 대상은 단일 MuJoCo 도립진자 환경에 집중되어 있다.
-- 다음 단계는 `state estimator`, `model mismatch`, `cost sensitivity`, `different horizons` 비교를 추가하는 것이다.
+- 현재 메인 실험은 선형화 기반 MPC입니다. 비선형 MPC나 estimator는 아직 포함하지 않았습니다.
+- 실험 대상은 단일 MuJoCo 도립진자 환경에 집중되어 있습니다.
+- 다음 단계는 `state estimator`, `model mismatch`, `cost sensitivity`, `different horizons` 비교를 추가하는 것입니다.

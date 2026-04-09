@@ -2,10 +2,18 @@
 
 > MuJoCo 도립진자에서 `LQR`과 제약을 포함한 `MPC`를 같은 외란과 같은 제약 아래 비교한 제어 벤치마크.
 
-|  |  |
-|---|---|
-| ![LQR GIF](assets/gifs/lqr.gif) | ![MPC GIF](assets/gifs/mpc.gif) |
-| [그림1] 기본 조건, `amp = 275`, `seed = 0`에서의 `LQR` 동작 장면. 레일 한계에 걸리며 위치 한계 초과로 종료된다. | [그림2] 기본 조건, `amp = 275`, `seed = 0`에서의 `MPC` 동작 장면. 같은 외란에서 끝까지 복귀에 성공한다. |
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/lqr.gif" alt="LQR GIF" width="80%" />
+      <div>[그림1] 기본 조건, `amp = 275`, `seed = 0`에서의 `LQR` 동작 장면. 레일 한계에 걸리며 위치 한계 초과로 종료된다.</div>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/mpc.gif" alt="MPC GIF" width="80%" />
+      <div>[그림2] 기본 조건, `amp = 275`, `seed = 0`에서의 `MPC` 동작 장면. 같은 외란에서 끝까지 복귀에 성공한다.</div>
+    </td>
+  </tr>
+</table>
 
 ## 개요
 MuJoCo `InvertedPendulum-v5`에서 유한차분 선형화로 동일한 `Ad`, `Bd`, `Q`, `R`를 공유하는 `LQR`과 `MPC`를 직접 구현했다.  

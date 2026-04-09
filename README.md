@@ -73,4 +73,4 @@ J = \sum_{k=0}^{N-1} \left( x_k^\top Q x_k + u_k^\top R u_k \right)
 - 메인 비교는 선형화 기반 `LQR`과 선형 `MPC`에 집중되어 있어 비선형 `MPC`나 상태추정기는 포함하지 않았다.
 - 실험 대상이 단일 MuJoCo 도립진자 환경에 한정되어 있어 일반화 범위는 제한적이다.
 
-자세한 해석은 [docs/report.md](docs/report.md), 지표 정의는 [docs/methodology.md](docs/methodology.md), 재현 절차는 [docs/reproduction.md](docs/reproduction.md)에 정리했다.
+재현 절차는 [docs/reproduction.md](docs/reproduction.md)에 정리했다.

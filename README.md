@@ -1,130 +1,76 @@
 # Control Bench
 
-MuJoCo 도립진자 환경에서 `LQR`과 `constrained MPC`를 직접 구현하고, 같은 외란과 같은 제약 조건 아래에서 두 제어기가 어떻게 다르게 실패하는지 비교한 포트폴리오 레포지토리다.
+> MuJoCo 도립진자에서 `LQR`과 제약을 포함한 `MPC`를 같은 외란과 같은 제약 아래 비교한 제어 벤치마크.
 
-## 문제 설정
+|  |  |
+|---|---|
+| ![LQR GIF](assets/gifs/lqr.gif) | ![MPC GIF](assets/gifs/mpc.gif) |
+| [그림1] 기본 조건, `amp = 275`, `seed = 0`에서의 `LQR` 동작 장면. 레일 한계에 걸리며 위치 한계 초과로 종료된다. | [그림2] 기본 조건, `amp = 275`, `seed = 0`에서의 `MPC` 동작 장면. 같은 외란에서 끝까지 복귀에 성공한다. |
 
-관심사는 단순한 제어 성능 비교가 아니라 다음 질문이다.
+## 개요
+MuJoCo `InvertedPendulum-v5`에서 유한차분 선형화로 동일한 `Ad`, `Bd`, `Q`, `R`를 공유하는 `LQR`과 `MPC`를 직접 구현했다.  
+비교 기준은 실패 양상과 제약 활성 패턴이다. 먼저 무제약 기초 검증으로 구현이 맞는지 확인하고, 큰 외란 구간에서 `du_max` 비교 실험을 돌려 두 제어기의 차이가 가장 잘 드러나는 전이 구간을 골랐다.
 
-- 제약이 없을 때 MPC는 정말 LQR과 같은 입력을 내는가
-- `x`, `u`, `delta u` 제약이 활성화될 때 둘의 차이는 어디서 발생하는가
-- 지연과 센서 노이즈가 추가되면 어떤 실패 모드가 먼저 드러나는가
+## 핵심 수식
+두 제어기는 같은 선형화 모델과 같은 비용함수를 공유한다.
 
-이 레포는 그 질문을 재현 가능한 실험 코드, 플롯, 보고서로 정리한다.
-
-## 핵심 결과
-
-- 무제약 조건에서는 `terminal cost = DARE P`인 선형 MPC가 LQR과 수치 오차 수준으로 일치했다.
-- 전이 구간에서는 차이가 분명해졌다. 특히 `|x| <= 1`, `|u| <= 3`, `|delta u| <= 2.6` 조건에서 LQR은 rail limit에 먼저 걸리는 반면 MPC는 미래 상태 제약을 예측에 넣어 더 강한 외란까지 버틴다.
-- `delta u`는 임의로 잡지 않았다. high-amp 구간에서 sweep을 돌려, 두 제어기의 차이가 가장 정보량 있게 드러나는 대표값으로 `du_max = 2.6`을 선택했다.
-- 실험 코드는 입력 지연과 관측 노이즈 wrapper를 포함하고 있어, 같은 벤치마크 프레임으로 강건성 실험까지 확장할 수 있다.
-
-## 대표 결과
-
-센서 노이즈 `0.01`을 넣었을 때의 제약 활성 빈도와 마진:
-
-![constraint activity with noise 0.01](assets/figures/sat_rate_transition.png)
-
-센서 노이즈 `0.01` 환경에서의 상태/입력 시계열 예시:
-
-![timeseries with noise 0.01](assets/figures/u_timeseries_transition_seed1.png)
-
-입력 지연 `2-step`을 넣었을 때의 성공률과 실패 원인 분리:
-
-![success rate with delay 2-step](assets/figures/success_rate_transition.png)
-
-이상적 조건에서 `du_max` 선택 근거. 값이 너무 작으면 둘 다 실패하고, 너무 크면 둘 다 성공해서 차이가 흐려진다:
-
-![success gap vs du](assets/figures/success_gap_vs_du.png)
-
-이상적 조건에서 amp별로 봐도 같은 경향이 유지된다:
-
-![per amp success vs du](assets/figures/per_amp_success_vs_du.png)
-
-## 빠른 실행
-
-환경 준비:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+```math
+x_{k+1} = A_d x_k + B_d u_k
 ```
 
-헤드리스 환경에서 비디오 렌더링이 필요하면 `MUJOCO_GL=egl`를 사용한다. `smoke_mujoco.py`는 이 값을 기본으로 설정한다.
-
-MuJoCo 스모크 테스트:
-
-```bash
-python smoke_mujoco.py
+```math
+J = \sum_{k=0}^{N-1} \left( x_k^\top Q x_k + u_k^\top R u_k \right)
 ```
 
-빠른 비교 실행:
+차이는 `MPC`가 예측 구간 안에서 다음 제약을 직접 다룬다는 점이다.
 
-```bash
-python -m experiments.fd_compare.eval_sweep_fd_compare \
-  --mode metrics \
-  --controllers lqr_fd,mpc_fd \
-  --amps 250,275 \
-  --seeds 3 \
-  --disturbance-kind window \
-  --t0 100 \
-  --duration 5 \
-  --theta0 0 \
-  --termination-theta 1.5708 \
-  --termination-x-limit 1.0 \
-  --x-fail-limit 1.0 \
-  --x-fail-eps 0.0 \
-  --x-fail-hold 1 \
-  --actuator-u-max 3.0 \
-  --actuator-u-min -3.0 \
-  --actuator-du-max 2.6 \
-  --metric-du-threshold 2.6 \
-  --sat-tol 0.02 \
-  --steps 250 \
-  --step-log-dir logs/fd_compare/steps_quick \
-  --out logs/fd_compare/summary_quick.csv
+```math
+|u_k| \le u_{\max}, \quad |\Delta u_k| \le \Delta u_{\max}, \quad |x_k| \le x_{\max}
 ```
 
-플롯 생성:
+## 구현 내용
+- MuJoCo 상태천이에서 `Ad`, `Bd`를 유한차분으로 추정하고, 이산 `LQR`을 계산했다.
+- 입력·상태 제약을 함께 다루는 선형 `MPC`를 구현해 `u`, `delta u`, `x` 제약을 예측 구간 안에서 직접 처리했다.
+- 외란, 입력 지연, 센서 노이즈 래퍼와 반복 실험·시각화 코드를 붙여 같은 조건에서 두 제어기를 비교했다.
 
-```bash
-python -m experiments.fd_compare.plot_fd_compare \
-  --csv logs/fd_compare/summary_quick.csv \
-  --outdir plots/fd_compare_quick \
-  --step-log-dir logs/fd_compare/steps_quick \
-  --u-seed 0
-```
+## 결과
 
-더 긴 재현 절차와 figure-grade 실행 명령은 [docs/reproduction.md](docs/reproduction.md)에 정리했다.
+기본, 각도 노이즈 `0.005`, 각도 노이즈 `0.01` 조건에서 MPC는 평균 성공률 `100%`를 유지한 반면, LQR은 `55.6~57.8%`에 머물렀다. 반대로 지연 `2-step`에서는 두 제어기 모두 거의 붕괴했다.
 
-## 레포 구조
+평균 성공률은 각 비교 구간 전체 `amp`에 대한 평균이고, `100% 성공 최대 amp`는 성공률 `1.0`을 유지한 마지막 외란 크기다.
 
-```text
-controllers/         LQR, MPC, actuator limiter
-envs/                MuJoCo environment factory and wrappers
-experiments/         benchmark, plotting, sanity checks, tuning scripts
-docs/                report, methodology, reproduction notes
-assets/figures/      README에 직접 쓰는 대표 이미지
-```
+| 케이스 | amp (N) 범위 | LQR 평균 성공률 | MPC 평균 성공률 | 100% 성공 최대 amp (N) (LQR / MPC) | 주 실패 모드 (LQR / MPC) |
+|------|-----------|----------------|----------------|-------------------------------|--------------------------|
+| 기본 | `250~290` | `55.6%` | `100.0%` | `270 / 290` | `x / theta` |
+| 지연 1-step | `50~275` | `62.0%` | `69.8%` | `100 / 125` | `x / other` |
+| 지연 2-step | `80~120` | `6.0%` | `5.2%` | `- / -` | `x / theta` |
+| 각도 노이즈 `0.005` | `250~290` | `57.1%` | `100.0%` | `265 / 290` | `x / theta` |
+| 각도 노이즈 `0.01` | `250~290` | `57.8%` | `100.0%` | `260 / 290` | `x / theta` |
 
-## 문서
+기본 조건에서 평균 `u` 제약 활성률은 `LQR 2.77%`, `MPC 1.89%`였고, 평균 `du` 제약 활성률은 `LQR 0.58%`, `MPC 0.40%`였다.
 
-- [docs/report.md](docs/report.md): 프로젝트 동기, 실험 설정, 핵심 해석
-- [docs/methodology.md](docs/methodology.md): 모델링, 제약, 지표, sanity check 정리
-- [docs/reproduction.md](docs/reproduction.md): 환경 준비, 벤치마크 실행, 플롯 재현 절차
+<p align="center">
+  <img src="assets/figures/basic_success_rate.png" alt="기본 조건 성공률 비교" width="80%" />
+</p>
 
-## 구현 포인트
+[그림3] 이상적 조건의 성공률·실패 원인 그래프. 입력 지연이 없고 각도 노이즈도 없는 조건에서 외란 크기(`amp`)에 따라 `LQR`과 `MPC`의 성공률이 달라지는 것을 보여준다.
 
-- [controllers/lqr.py](controllers/lqr.py): DARE 기반 discrete LQR과 이론 모델 이산화
-- [controllers/mpc.py](controllers/mpc.py): condensed linear MPC with input, rate, state constraints
-- [experiments/fd_compare/run_fd_compare.py](experiments/fd_compare/run_fd_compare.py): 공정 비교용 메인 rollout 엔진
-- [experiments/fd_compare/eval_sweep_fd_compare.py](experiments/fd_compare/eval_sweep_fd_compare.py): sweep 실행과 메트릭 CSV 생성
-- [experiments/fd_compare/plot_fd_compare.py](experiments/fd_compare/plot_fd_compare.py): aggregate plot 생성
-- [experiments/fd_compare/sanity_unconstrained_mpc.py](experiments/fd_compare/sanity_unconstrained_mpc.py): 무제약 MPC=LQR 검증
+<p align="center">
+  <img src="assets/figures/noise01_success_rate.png" alt="노이즈 0.01 성공률 비교" width="80%" />
+</p>
 
-## 한계와 다음 단계
+[그림4] 각도 노이즈 `0.01` 조건의 성공률·실패 원인 그래프. 노이즈가 들어간 뒤에도 `MPC`는 전 구간에서 성공률 `100%`를 유지하고, `LQR`은 외란이 커질수록 빠르게 무너진다.
 
-- 현재 메인 실험은 선형화 기반 MPC다. 비선형 MPC나 estimator는 아직 포함하지 않았다.
-- 실험 대상은 단일 MuJoCo 도립진자 환경에 집중되어 있다.
-- 다음 단계는 `state estimator`, `model mismatch`, `cost sensitivity`, `different horizons` 비교를 추가하는 것이다.
+<p align="center">
+  <img src="assets/figures/delay2step_timeseries_seed0.png" alt="지연 2-step 시계열" width="80%" />
+</p>
+
+[그림5] 지연 `2-step` 조건의 시계열 그래프. `seed = 0`에서 선택된 외란 크기에 대한 상태·입력 응답을 비교한 것으로, 지연이 커지면 두 제어기 모두 빠르게 불안정해지는 모습을 보여준다.
+
+기본 조건과 각도 노이즈 조건에서는 MPC의 이점이 분명했고, 지연이 `2-step`까지 커지면 두 제어기 모두 급격히 불안정해졌다.
+
+## 한계
+- 메인 비교는 선형화 기반 `LQR`과 선형 `MPC`에 집중되어 있어 비선형 `MPC`나 상태추정기는 포함하지 않았다.
+- 실험 대상이 단일 MuJoCo 도립진자 환경에 한정되어 있어 일반화 범위는 제한적이다.
+
+자세한 해석은 [docs/report.md](docs/report.md), 지표 정의는 [docs/methodology.md](docs/methodology.md), 재현 절차는 [docs/reproduction.md](docs/reproduction.md)에 정리했다.

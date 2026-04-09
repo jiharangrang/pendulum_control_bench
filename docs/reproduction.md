@@ -1,7 +1,5 @@
 # 재현 가이드
 
-이 문서는 포트폴리오 README보다 한 단계 깊게, 실제로 어떤 명령을 실행하면 같은 종류의 결과를 재현할 수 있는지 정리한다.
-
 ## 1. 환경 준비
 
 프로젝트 루트에서 실행:
@@ -78,7 +76,7 @@ python -m experiments.fd_compare.plot_fd_compare \
 
 ## 4. 대표 figure 재현
 
-README와 보고서의 비교 서사에 가장 가까운 명령은 아래 조합이다.
+README와 가장 가까운 명령은 아래 조합이다.
 
 ```bash
 python -m experiments.fd_compare.eval_sweep_fd_compare \
@@ -163,5 +161,3 @@ python -m experiments.fd_compare.sweep_du_high_amp \
 - `logs/fd_compare/steps_*/*.csv`: step-level traces
 - `plots/fd_compare/*.png`: aggregate plots
 - `videos/`: `RecordVideo`가 생성하는 렌더링 결과
-
-이 경로들은 `.gitignore`에 포함되어 있으므로, 포트폴리오 레포에는 기본적으로 커밋하지 않는다. README에 직접 보여줄 대표 이미지가 필요하면 `assets/figures/`로 선별 복사한다.

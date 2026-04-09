@@ -1,6 +1,6 @@
 # Control Bench
 
-> MuJoCo 도립진자에서 `LQR`과 제약을 포함한 `MPC`를 같은 외란과 같은 제약 아래 비교한 제어 벤치마크.
+MuJoCo 도립진자에서 `LQR`과 제약을 포함한 `MPC`를 같은 외란과 같은 제약 아래 비교한 제어 벤치마크.
 
 <table>
   <tr>
